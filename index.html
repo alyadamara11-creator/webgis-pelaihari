@@ -3,269 +3,570 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGIS Enterprise - Pelaihari</title>
+    <title>InfraTrack WebGIS - Alya A. Damara</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
     <style>
-        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --danger: #e74c3c; --warning: #f39c12; --success: #2ecc71; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ecf0f1; margin: 0; padding: 20px; }
+        /* =========================================
+           V.30 ZERO-CLICK HOVER EDITION (FINAL MASTER)
+           ========================================= */
+        :root { 
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-sidebar: #0b1121;
+            --data-mulus: #10b981; 
+            --data-sedang: #f59e0b; 
+            --data-rusak: #ef4444; 
+            --ui-border: #e2e8f0;
+            --ui-border-dark: #1e293b;
+            --ui-hover-dark: #162032;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-light: #f8fafc;
+            --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --shadow-float: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        }
         
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
-        .title-box h2 { margin: 0 0 5px 0; letter-spacing: 1px; }
-        .title-box p { margin: 0; color: #bdc3c7; font-size: 14px; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; margin: 0; background-color: var(--bg-body); display: flex; height: 100vh; overflow: hidden; color: var(--text-main); }
         
-        .control-panel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,0.05);}
-        .metric-box { text-align: center; background: #f8f9fa; padding: 10px 20px; border-radius: 6px; border: 1px solid #e0e0e0;}
-        .metric-val { font-size: 28px; font-weight: bold; color: var(--accent); margin-top: 5px;}
+        /* SIDEBAR */
+        .sidebar { width: 280px; background: var(--bg-sidebar); color: var(--text-light); display: flex; flex-direction: column; border-right: 1px solid var(--ui-border-dark); z-index: 1000; box-shadow: 4px 0 24px rgba(0,0,0,0.08); }
+        .sidebar-header { padding: 32px 24px; border-bottom: 1px solid var(--ui-border-dark); background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
+        .sidebar-header h2 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; color: #fff; }
         
-        .btn-reset { background: #95a5a6; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-left: 10px;}
-        .btn-reset:hover { background: #7f8c8d; }
+        .menu-container { padding: 24px; flex: 1; overflow-y: auto; }
+        .menu-label { font-size: 10px; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 12px; display: block; letter-spacing: 1.5px; }
         
-        .btn-filter { background: var(--danger); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s;}
-        .btn-filter:hover { background: #c0392b; }
+        /* BUTTONS */
+        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; margin-bottom: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13px; background: transparent; color: #cbd5e1; border: 1px solid var(--ui-border-dark); }
+        .btn:hover { background: var(--ui-hover-dark); color: #fff; border-color: #475569; }
+        .btn-primary { background: #fff; color: #0f172a; border: none; box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        .btn-primary:hover { background: #f8fafc; color: #000; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,255,255,0.15); }
+
+        /* ENTERPRISE SELECT DROPDOWN */
+        .enterprise-select-wrapper { position: relative; margin-bottom: 10px; }
+        .enterprise-select { 
+            width: 100%; padding: 12px 16px; background: transparent; 
+            color: #cbd5e1; border: 1px solid var(--ui-border-dark); border-radius: 8px; 
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; 
+            cursor: pointer; appearance: none; outline: none; transition: 0.2s;
+        }
+        .enterprise-select:hover { background: var(--ui-hover-dark); color: #fff; border-color: #475569; }
+        .enterprise-select:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+        .enterprise-select option { background: var(--bg-sidebar); color: #f8fafc; font-weight: 600; }
+        .select-arrow { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #64748b; transition: 0.2s; }
+        .enterprise-select-wrapper:hover .select-arrow { color: #fff; }
+
+        /* GALLERY CARDS */
+        .gallery-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+        .audit-card { background: #1e293b; border: 1px solid var(--ui-border-dark); border-radius: 10px; overflow: hidden; transition: 0.3s; cursor: pointer; }
+        .audit-card:hover { border-color: #64748b; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .audit-header { padding: 10px 12px; border-bottom: 1px solid var(--ui-border-dark); display: flex; justify-content: space-between; align-items: center; background:#0f172a; }
+        .audit-id { font-size: 10px; color: #94a3b8; font-weight: 600; font-family: monospace; }
+        .audit-badge { font-size: 9px; font-weight: 800; display: flex; align-items: center; gap: 4px; letter-spacing:0.5px; padding: 4px 6px; border-radius: 4px;}
+        .audit-img { width: 100%; height: 110px; object-fit: cover; opacity: 0.85; transition: 0.3s; filter: grayscale(10%);}
+        .audit-card:hover .audit-img { opacity: 1; filter: grayscale(0%); }
+
+        /* MAIN CONTENT */
+        .main-content { flex: 1; display: flex; flex-direction: column; padding: 24px; overflow-y: auto; }
+        .content-grid { display: grid; grid-template-columns: 2.8fr 1fr; gap: 24px; height: 100%; }
+        .card { background: var(--bg-card); border-radius: 16px; box-shadow: var(--shadow-card); padding: 24px; display: flex; flex-direction: column; border: 1px solid var(--ui-border); }
+        #map { flex: 1; border-radius: 12px; border: 1px solid var(--ui-border); min-height: 400px; z-index: 1; background: #0b1121; }
         
-        .grid-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        #map { height: 500px; border-radius: 8px; border: 2px solid #bdc3c7; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1;}
-        .library-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow-x: auto;}
+        /* CUSTOM LEAFLET LAYER CONTROL */
+        .leaflet-control-layers { border-radius: 12px !important; border: 1px solid var(--ui-border) !important; box-shadow: var(--shadow-float) !important; padding: 6px !important; font-family: 'Inter', sans-serif !important; font-size: 12px !important; font-weight: 600 !important; }
+        .leaflet-control-layers-toggle { width: 44px !important; height: 44px !important; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; display: inline-block;}
-        .table-font { font-size: 13px; }
+        /* CHARTS & METRICS */
+        .chart-container { position: relative; height: 160px; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; }
+        .percent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .p-box { padding: 14px 10px; border-radius: 10px; border: 1px solid var(--ui-border); background: #f8fafc; display: flex; flex-direction: column; align-items: center; transition: 0.2s; text-align: center; }
+        .p-box:hover { background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+        .p-val { font-size: 22px; font-weight: 800; letter-spacing:-0.5px;}
+        .p-lbl { font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;}
+        .val-mulus { color: var(--data-mulus); } .val-sedang { color: var(--data-sedang); } .val-rusak { color: var(--data-rusak); }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 12px; color: var(--text-main); font-weight: 600; }
+
+        /* ZERO-PADDING TOOLTIP (HOVER) */
+        .leaflet-tooltip { background: transparent; border: none; box-shadow: none; }
+        .animated-tooltip { background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(10px) !important; border: 1px solid var(--ui-border) !important; border-radius: 12px !important; box-shadow: 0 15px 30px -5px rgba(0,0,0,0.2) !important; padding: 0 !important; opacity: 0; animation: fadeUp 0.2s ease-out forwards; overflow: hidden; pointer-events: none;}
+        @keyframes fadeUp { 0% { opacity: 0; transform: translateY(5px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseAlert { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        /* POPUP UNTUK AKSI (KLIK) */
+        .leaflet-popup-content-wrapper { border-radius: 12px !important; box-shadow: var(--shadow-float) !important; border: 1px solid var(--ui-border) !important; background: #fff !important; padding: 0 !important; overflow: hidden; }
+        .leaflet-popup-content { margin: 0 !important; width: 220px !important; line-height: 1.5 !important; }
+        .leaflet-popup-tip { background: #fff !important; border-bottom: 1px solid var(--ui-border) !important; border-right: 1px solid var(--ui-border) !important; }
+        .leaflet-popup-close-button { color: #fff !important; font-size: 18px !important; margin-top: 10px !important; margin-right: 10px !important; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        
+        /* WIDGET SECTIONS */
+        .widget-header { background: #0f172a; color: #fff; padding: 12px 16px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; display:flex; align-items:center; gap:8px;}
+        .widget-body { padding: 16px; background: #fff; }
+
+        /* BENTO GRID */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .info-item { background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--ui-border); display: flex; flex-direction: column; justify-content: center; }
+        .info-label { font-size: 9px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .info-value { font-size: 13px; color: var(--text-main); font-weight: 800; }
+
+        /* UPLOAD BOX */
+        .custom-upload-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; cursor: pointer; color: var(--text-muted); margin-top: 8px; transition: 0.2s;}
+        .custom-upload-box:hover { background: #f0f9ff; border-color: #3b82f6; color: #3b82f6; }
+        .custom-upload-box svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; }
+
+        /* ACTION BUTTONS IN POPUP */
+        .popup-action-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; border: 1px solid transparent; margin-bottom: 8px;}
+        .btn-copy { background: #f1f5f9; color: #0f172a; border-color: #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-copy:hover { background: #e2e8f0; border-color: #cbd5e1; }
+
+        /* LIGHTBOX */
+        .lightbox-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); justify-content: center; align-items: center; backdrop-filter: blur(5px);}
+        .lightbox-content { position: relative; max-width: 90%; max-height: 90%; animation: zoomIn 0.2s ease-out forwards; }
+        .lightbox-img { max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 2px solid #334155;}
+        .lightbox-close { position: absolute; top: -16px; right: -16px; background: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2); color:#ef4444;}
+        @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="title-box">
-            <h2>Sistem Informasi Spasial Infrastruktur (Pelaihari)</h2>
-            <p>Arsitektur: Big Data Clustering | Sensor Fusion: MPU6050 & BH1750</p>
+    <div id="photoLightbox" class="lightbox-overlay"><div class="lightbox-content"><div class="lightbox-close" onclick="closeLightbox()">✕</div><img id="lightboxImg" class="lightbox-img" src=""></div></div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>
+                <svg width="20" height="20" fill="none" stroke="#38bdf8" viewBox="0 0 24 24" style="margin-right: 4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                InfraTrack WebGIS
+            </h2>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ui-border-dark);">
+                <p style="margin: 0; font-size: 9px; color: #64748b; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800;">System Architect & Lead Dev</p>
+                <p style="margin: 4px 0 0 0; font-size: 14px; color: #f8fafc; font-weight: 600; letter-spacing: 0.5px;">Alya A. Damara</p>
+            </div>
         </div>
-        <div>
-            <button class="btn-filter" id="toggleFilter" onclick="toggleCriticalFilter()">🚨 Mode Eksekutif: Tampilkan Kerusakan Saja</button>
-            <button class="btn-reset" onclick="resetDatabase()">🗑️ Reset</button>
+
+        <div class="menu-container">
+            <span class="menu-label">Manajemen Data</span>
+            <input type="file" id="csvFile" accept=".csv" style="display:none;">
+            <button class="btn btn-primary" onclick="document.getElementById('csvFile').click()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Impor Data CSV
+            </button>
+            <button class="btn" onclick="generateComprehensivePDF()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Unduh Laporan Lengkap
+            </button>
+            
+            <span class="menu-label" style="margin-top: 32px;">Kategori Spasial (Filter)</span>
+            
+            <div class="enterprise-select-wrapper">
+                <select id="severityFilter" class="enterprise-select" onchange="applySeverityFilter(this.value)">
+                    <option value="all">👁️ Tampilkan Semua Titik</option>
+                    <option value="mulus">✅ Kategori Mulus Saja</option>
+                    <option value="sedang">⚠️ Kategori Sedang Saja</option>
+                    <option value="rusak">🚨 Kategori Rusak Parah Saja</option>
+                </select>
+                <svg class="select-arrow" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            
+            <span class="menu-label" style="margin-top: 32px;">Galeri Validasi Lapangan</span>
+            <div id="sidebarGallery" class="gallery-container"></div>
+        </div>
+        <div style="padding: 24px; border-top: 1px solid var(--ui-border-dark);">
+            <button class="btn" style="color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="resetDatabase()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Bersihkan Database
+            </button>
         </div>
     </div>
 
-    <div class="control-panel">
-        <div class="metric-box">
-            <div style="font-size: 12px; color: #7f8c8d;">Total Data Arsip</div>
-            <div class="metric-val" id="valSampel">0</div>
-        </div>
-        <div>
-            <label style="font-weight: bold; display: block; margin-bottom: 8px;">📂 Unggah Data Baru (CSV):</label>
-            <input type="file" id="csvFile" accept=".csv" />
-        </div>
-        <div class="metric-box">
-            <div style="font-size: 12px; color: #7f8c8d;">Anomali (Jalan Rusak)</div>
-            <div class="metric-val" id="valRusak" style="color: var(--danger);">0</div>
-        </div>
-    </div>
+    <div class="main-content">
+        <div class="content-grid">
+            <div class="card" style="padding: 8px;"><div id="map"></div></div>
+            <div class="card">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 800; color:var(--text-main);">Metrik Infrastruktur</h3>
+                <div class="chart-container"><canvas id="statChart"></canvas></div>
+                
+                <div class="percent-grid">
+                    <div class="p-box">
+                        <span class="p-val val-mulus" id="pctMulus">0%</span>
+                        <span class="p-lbl">Mulus</span>
+                        <span id="countMulus" style="font-size:10px; color:#64748b; margin-top:4px; font-weight:700;">0 Titik</span>
+                    </div>
+                    <div class="p-box">
+                        <span class="p-val val-sedang" id="pctSedang">0%</span>
+                        <span class="p-lbl">Sedang</span>
+                        <span id="countSedang" style="font-size:10px; color:#64748b; margin-top:4px; font-weight:700;">0 Titik</span>
+                    </div>
+                    <div class="p-box">
+                        <span class="p-val val-rusak" id="pctRusak">0%</span>
+                        <span class="p-lbl">Rusak</span>
+                        <span id="countRusak" style="font-size:10px; color:#64748b; margin-top:4px; font-weight:700;">0 Titik</span>
+                    </div>
+                </div>
 
-    <div class="grid-container">
-        <div id="map"></div>
-
-        <div class="library-panel">
-            <h3 style="margin-top: 0; color: var(--primary);">📚 Pangkalan Data Spasial (Offline Library)</h3>
-            <table id="dataTable" class="display table-font" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Jam</th>
-                        <th>Koor (Lat, Lon)</th>
-                        <th>G-Force (g)</th>
-                        <th>Lux</th>
-                        <th>Status Audit</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+                <div class="stats-summary" style="margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--ui-border);">
+                    <div class="stat-row"><span>Total Titik Ditampilkan</span><span id="valSampel" style="font-family:monospace; font-size:14px;">0</span></div>
+                    <div class="stat-row val-rusak"><span>Total Anomali (Rusak+Sedang)</span><span id="valRusak" style="font-family:monospace; font-size:14px; font-weight:800;">0</span></div>
+                </div>
+                <div style="margin-top: auto; padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 12px; color: var(--text-muted); line-height: 1.7; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <b style="color:var(--text-main);">PANDUAN OPERASIONAL:</b><br>
+                    • <b>Arahkan Kursor (Hover)</b>: Menampilkan data lengkap & foto instan tanpa klik.<br>
+                    • <b>Klik Titik</b>: Membuka menu aksi (Salin Koordinat & Kelola Foto).<br>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        var map = L.map('map').setView([-3.800, 114.760], 13);
-        L.tileLayer('http://mt0.google.com/vt/lyrs=y&hl=id&x={x}&y={y}&z={z}', {
-            attribution: '© Google Maps | Developed by Alya A.D.', maxZoom: 20
-        }).addTo(map);
+        const db = new Dexie("AlyaWebGIS_DB");
+        db.version(1).stores({ photos: 'id, base64Image, severity' });
 
-        // Mesin Clustering (Perangkum Titik Otomatis)
-        var markersCluster = L.markerClusterGroup({
-            maxClusterRadius: 50, // Semakin besar angkanya, semakin banyak titik digabung
-            disableClusteringAtZoom: 18 // Pecah semua gelembung jika di-zoom sampai mentok
-        });
-        map.addLayer(markersCluster);
+        let googleHybrid = L.tileLayer('http://mt0.google.com/vt/lyrs=y&hl=id&x={x}&y={y}&z={z}', { attribution: '© Google Maps' });
+        let googleStreet = L.tileLayer('http://mt0.google.com/vt/lyrs=m&hl=id&x={x}&y={y}&z={z}', { attribution: '© Google Maps' });
+        let cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
 
-        var table = $('#dataTable').DataTable({
-            "language": { "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json" },
-            "pageLength": 10, "order": [[ 0, "desc" ], [ 1, "desc" ]] 
-        });
+        let map = L.map('map', { 
+            zoomControl: false,
+            layers: [googleHybrid] 
+        }).setView([-3.800, 114.760], 13);
+        
+        L.control.zoom({ position: 'bottomright' }).addTo(map); 
 
-        var showOnlyCritical = false;
+        let baseMaps = {
+            "🛰️ Google Satellite": googleHybrid,
+            "🗺️ Google Streets": googleStreet,
+            "⬜ Peta Bersih (Carto)": cartoLight
+        };
+        L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
 
-        function resetDatabase() {
-            if(confirm("Hapus seluruh data perpustakaan di browser ini?")) {
-                localStorage.removeItem('alyaSensorData');
-                location.reload();
-            }
-        }
+        let markersLayer = L.featureGroup().addTo(map);
 
-        // Mode Triage: Hanya Tampilkan yang Rusak
-        function toggleCriticalFilter() {
-            showOnlyCritical = !showOnlyCritical;
-            let btn = document.getElementById('toggleFilter');
-            
-            if(showOnlyCritical) {
-                btn.innerHTML = "👁️ Tampilkan Seluruh Data (Termasuk Mulus)";
-                btn.style.background = "#f39c12"; // Oranye
-            } else {
-                btn.innerHTML = "🚨 Mode Eksekutif: Tampilkan Kerusakan Saja";
-                btn.style.background = "var(--danger)"; // Merah
-            }
-            
-            // Render ulang dengan filter yang aktif
-            var savedData = localStorage.getItem('alyaSensorData');
-            if(savedData) { renderDashboard(JSON.parse(savedData)); }
-        }
+        let activeSeverityFilter = 'all'; 
+        let currentChart = null;
+        window.markerDict = {};
 
-        function renderDashboard(dataArray) {
-            markersCluster.clearLayers(); // Bersihkan kluster lama
-            table.clear();
-            var validPoints = 0, rusakPoints = 0;
-
-            dataArray.forEach(function(row) {
-                if(row.lat && row.lon) {
-                    var isDamaged = (row.mag >= 1.2);
-                    
-                    // Logika Filter: Lewati data jika Mode Eksekutif menyala & jalanannya mulus
-                    if (showOnlyCritical && !isDamaged) return;
-
-                    validPoints++;
-                    if(isDamaged) rusakPoints++;
-
-                    var markerColor = "#2ecc71", radiusSize = 6, statusText = "Aman";
-                    var tableBadge = "<span class='badge' style='background:var(--success)'>Mulus</span>";
-
-                    if (row.mag >= 1.7) { 
-                        markerColor = "#e74c3c"; radiusSize = 10; statusText = "Rusak Parah";
-                        tableBadge = "<span class='badge' style='background:var(--danger)'>Rusak Parah</span>";
-                    } else if (row.mag >= 1.2) { 
-                        markerColor = "#f39c12"; radiusSize = 8; statusText = "Bergelombang";
-                        tableBadge = "<span class='badge' style='background:var(--warning)'>Bergelombang</span>";
-                    }
-
-                    var luxWarning = "";
-                    if (row.lux < 15 && row.mag >= 1.7) {
-                        luxWarning = "<br><span class='badge' style='background:#8e44ad; margin-top:5px;'>⚠️ ZONA RAWAN FATAL</span>";
-                        tableBadge += " <span class='badge' style='background:#8e44ad; margin-left:5px;'>Fatal (Gelap)</span>";
-                    }
-
-                    // Buat Titik dan masukkan ke dalam Mesin Perangkum (Cluster)
-                    var circle = L.circleMarker([row.lat, row.lon], {
-                        color: markerColor, fillColor: markerColor, fillOpacity: 0.9, radius: radiusSize, weight: 2
-                    });
-
-                    circle.bindPopup(`
-                        <div style="font-family: sans-serif;">
-                            <h4 style="margin: 0 0 8px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px;">Detail Inspeksi</h4>
-                            <b>📅 Tanggal:</b> ${row.tanggal}<br>
-                            <b>⏰ Jam:</b> ${row.waktu}<br>
-                            <b>📍 Koor:</b> ${row.lat}, ${row.lon}<br>
-                            <b>📈 G-Force:</b> ${row.mag} g<br>
-                            <b>💡 Cahaya:</b> ${row.lux} Lux ${luxWarning}
-                        </div>
-                    `);
-                    
-                    markersCluster.addLayer(circle);
-
-                    // Masukkan ke Tabel
-                    table.row.add([ row.tanggal, row.waktu, `${row.lat}, ${row.lon}`, row.mag, row.lux, tableBadge ]);
-                }
-            });
-
-            table.draw();
-            
-            // Update Angka Metrik di Atas
-            if(!showOnlyCritical) {
-                document.getElementById('valSampel').innerText = validPoints;
-            }
-            document.getElementById('valRusak').innerText = rusakPoints;
-        }
-
-        window.onload = function() {
-            var savedData = localStorage.getItem('alyaSensorData');
-            if(savedData) { renderDashboard(JSON.parse(savedData)); }
+        window.applySeverityFilter = function(val) {
+            activeSeverityFilter = val;
+            renderDashboard(JSON.parse(localStorage.getItem('alyaSensorData') || "[]"));
         };
 
-        function formatNMEATime(rawTime) {
-            if (!rawTime || rawTime === "-") return "-";
-            let timeStr = String(rawTime).replace('.', ''); 
-            if(timeStr.length === 5 || timeStr.length === 7) timeStr = "0" + timeStr;
-            let hh = parseInt(timeStr.substring(0, 2)), mm = timeStr.substring(2, 4), ss = timeStr.substring(4, 6);
-            let localHH = (hh + 8) % 24;
-            return `${String(localHH).padStart(2, '0')}:${mm}:${ss} WITA`;
-        }
-
-        function formatNMEADate(rawDate) {
-            if (!rawDate || rawDate === "-") return "-";
-            let dateStr = String(rawDate);
-            if(dateStr.length === 5) dateStr = "0" + dateStr; 
-            return `${dateStr.substring(0, 2)} / ${dateStr.substring(2, 4)} / 20${dateStr.substring(4, 6)}`;
-        }
-
-        function findValue(rowObj, possibleNames) {
-            for (let key in rowObj) {
-                let cleanKey = key.trim().toLowerCase(); 
-                if (possibleNames.includes(cleanKey)) {
-                    let val = rowObj[key];
-                    if (typeof val === 'string' && !possibleNames.includes("tanggal") && !possibleNames.includes("waktu") && !possibleNames.includes("date") && !possibleNames.includes("time") && !possibleNames.includes("hari") && !possibleNames.includes("jam")) {
-                        val = parseFloat(val.replace(',', '.'));
-                    }
-                    return val || rowObj[key]; 
-                }
-            }
-            return "-"; 
-        }
-
-        document.getElementById('csvFile').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
-
-            Papa.parse(file, {
-                header: true, skipEmptyLines: true,
-                complete: function(results) {
-                    var structuredData = [];
-                    results.data.forEach(function(row) {
-                        var lat = findValue(row, ["lat", "latitude", "y"]), lon = findValue(row, ["lon", "longitude", "lng", "x"]);
-                        if(lat !== "-" && lon !== "-" && !isNaN(lat) && !isNaN(lon)) {
-                            structuredData.push({
-                                lat: lat, lon: lon,
-                                mag: findValue(row, ["total_mag", "mag", "g-force", "g_force", "guncangan"]),
-                                lux: findValue(row, ["lux", "cahaya", "intensitas", "bh1750"]),
-                                tanggal: formatNMEADate(findValue(row, ["tanggal", "date", "hari", "tgl"])), 
-                                waktu: formatNMEATime(findValue(row, ["waktu", "jam", "time"]))      
-                            });
-                        }
-                    });
-
-                    var finalDataArray = localStorage.getItem('alyaSensorData') ? JSON.parse(localStorage.getItem('alyaSensorData')) : [];
-                    finalDataArray = finalDataArray.concat(structuredData);
-                    localStorage.setItem('alyaSensorData', JSON.stringify(finalDataArray));
-                    
-                    document.getElementById('csvFile').value = ''; // Reset form input
-                    renderDashboard(finalDataArray);
-                }
+        window.copyData = function(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                let originalText = btnElement.innerHTML;
+                btnElement.innerHTML = "✅ Tersalin!";
+                btnElement.style.background = "#d1fae5";
+                btnElement.style.color = "#047857";
+                btnElement.style.borderColor = "#34d399";
+                setTimeout(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.style.background = "";
+                    btnElement.style.color = "";
+                    btnElement.style.borderColor = "";
+                }, 2000);
             });
-        });
+        };
+
+        window.openLightbox = (src) => { document.getElementById('lightboxImg').src = src; document.getElementById('photoLightbox').style.display = 'flex'; };
+        window.closeLightbox = () => { document.getElementById('photoLightbox').style.display = 'none'; };
+
+        window.deletePhoto = async (id) => {
+            if(confirm("Hapus bukti fisik secara permanen?")) {
+                await db.photos.delete(id);
+                loadSidebarGallery();
+                renderDashboard(JSON.parse(localStorage.getItem('alyaSensorData') || "[]"));
+                map.closePopup();
+            }
+        };
+
+        async function loadSidebarGallery() {
+            const galleryDiv = document.getElementById('sidebarGallery');
+            const photos = await db.photos.toArray();
+            if(photos.length === 0) { galleryDiv.innerHTML = `<p style="font-size:11px; color:#64748b; text-align:center; padding:10px; border:1px dashed #334155; border-radius:6px;">Belum ada dokumen foto.</p>`; return; }
+            galleryDiv.innerHTML = '';
+            photos.reverse().forEach(p => {
+                let sev = p.severity || 'rusak';
+                let badgeColor = sev === 'sedang' ? '#f59e0b' : '#ef4444';
+                let badgeBg = sev === 'sedang' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                let badgeText = sev === 'sedang' ? 'RUSAK SEDANG' : 'RUSAK PARAH';
+
+                let cardHTML = `
+                    <div class="audit-card" onclick="flyToMap('${p.id}')">
+                        <div class="audit-header">
+                            <span class="audit-id">#${p.id.substring(5,13)}</span>
+                            <span class="audit-badge" style="color:${badgeColor}; background:${badgeBg}; box-shadow:0 0 6px ${badgeColor}40;">
+                                <span style="width:6px; height:6px; background:${badgeColor}; border-radius:50%; display:inline-block; margin-right:4px;"></span>
+                                ${badgeText}
+                            </span>
+                        </div>
+                        <img src="${p.base64Image}" class="audit-img">
+                    </div>
+                `;
+                let tempDiv = document.createElement('div'); tempDiv.innerHTML = cardHTML; galleryDiv.appendChild(tempDiv.firstElementChild);
+            });
+        }
+
+        window.flyToMap = (id) => { 
+            let m = window.markerDict[id]; 
+            if (m) { 
+                map.flyTo(m.getLatLng(), 18, { duration: 1.5 });
+                setTimeout(() => { m.openPopup(); }, 1600);
+            } 
+        };
+
+        window.injectPhoto = (input, id, severityStr) => {
+            let file = input.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    let img = new Image();
+                    img.onload = async () => {
+                        let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d');
+                        let MAX_WIDTH = 600; let scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH; canvas.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        await db.photos.put({ id: id, base64Image: canvas.toDataURL('image/jpeg', 0.8), severity: severityStr });
+                        loadSidebarGallery();
+                        renderDashboard(JSON.parse(localStorage.getItem('alyaSensorData') || "[]"));
+                        map.closePopup();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        function updateCharts(stats) {
+            let total = stats.mulus + stats.sedang + stats.rusak;
+            
+            // Update Teks Persentase
+            document.getElementById('pctMulus').innerText = total ? Math.round((stats.mulus/total)*100) + '%' : '0%';
+            document.getElementById('pctSedang').innerText = total ? Math.round((stats.sedang/total)*100) + '%' : '0%';
+            document.getElementById('pctRusak').innerText = total ? Math.round((stats.rusak/total)*100) + '%' : '0%';
+            
+            // Update Teks Jumlah Titik (Angka Absolut)
+            document.getElementById('countMulus').innerText = stats.mulus + ' Titik';
+            document.getElementById('countSedang').innerText = stats.sedang + ' Titik';
+            document.getElementById('countRusak').innerText = stats.rusak + ' Titik';
+
+            const ctx = document.getElementById('statChart').getContext('2d');
+            if(currentChart) currentChart.destroy();
+            currentChart = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: ['Mulus', 'Sedang', 'Rusak Parah'], 
+                    datasets: [{ data: [stats.mulus, stats.sedang, stats.rusak], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }] 
+                }, 
+                options: { cutout: '80%', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: {size: 11, family: 'Inter', weight: 600}, padding:20 } } } } 
+            });
+        }
+
+        async function renderDashboard(dataArray) {
+            markersLayer.clearLayers(); window.markerDict = {}; 
+            let stats = { mulus: 0, sedang: 0, rusak: 0 }, filteredCount = 0;
+
+            for (let row of dataArray) {
+                // Logika Pemisahan Status Berdasarkan Data Sensor
+                let isDamaged = row.mag >= 1.2; 
+                let statKey = row.mag >= 1.7 ? 'rusak' : (row.mag >= 1.2 ? 'sedang' : 'mulus');
+                
+                stats[statKey]++; 
+
+                if (activeSeverityFilter !== 'all' && activeSeverityFilter !== statKey) {
+                    continue; 
+                }
+                
+                filteredCount++; 
+
+                let color = statKey === 'rusak' ? '#ef4444' : (statKey === 'sedang' ? '#f59e0b' : '#10b981');
+                
+                // FINAL REVISI: Hitbox Diperbesar Khusus Jalan Rusak/Sedang untuk Interaksi Lancar
+                let marker = L.circleMarker([row.lat, row.lon], {
+                    color: color,        
+                    weight: 8,            
+                    opacity: 0.5,        
+                    fillColor: color, 
+                    fillOpacity: 1, 
+                    radius: isDamaged ? 12 : 7 
+                });
+                
+                // Logika Fusi Sensor (Guncangan + Cahaya) untuk Zona Rawan
+                let kondisiCahaya = row.lux < 15 ? "Gelap (High Risk)" : "Terang (Normal)";
+                let isZonaRawan = (statKey === 'rusak' && row.lux < 15);
+
+                // --- ALGORITMA KONVERSI WAKTU GPS (UTC) KE WITA (UTC+8) ---
+                let rawTimeStr = row.waktu.toString().padStart(6, '0'); 
+                let hUTC = parseInt(rawTimeStr.substring(0, 2));
+                let mTime = rawTimeStr.substring(2, 4);
+                let sTime = rawTimeStr.substring(4, 6);
+                let hWITA = (hUTC + 8) % 24; 
+                let waktuWITA = `${hWITA.toString().padStart(2, '0')}:${mTime}:${sTime} WITA`;
+
+                let latlonStr = `${row.lat.toFixed(5)}, ${row.lon.toFixed(5)}`;
+                let statusLabel = statKey === 'rusak' ? 'Rusak Parah' : (statKey === 'sedang' ? 'Rusak Sedang' : 'Mulus');
+                let uniqueId = `foto_${row.lat.toString().replace(/[\.\-]/g, '')}_${row.lon.toString().replace(/[\.\-]/g, '')}`;
+                window.markerDict[uniqueId] = marker;
+
+                let record = await db.photos.get(uniqueId);
+                let savedImage = record ? record.base64Image : "";
+                let imgDisplay = savedImage ? "block" : "none";
+                let labelDisplay = savedImage ? "none" : "flex";
+
+                let tooltipHTML = `
+                    <div style="min-width:260px;">
+                        <div class="widget-header" style="border-radius:8px 8px 0 0; padding:10px 14px;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Forensik Spasial
+                        </div>
+                        <div class="widget-body" style="padding:12px; border-radius:0 0 8px 8px;">
+                            
+                            <div style="background:${color}15; border: 1px solid ${color}30; border-radius:6px; padding:8px; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <span style="width:8px; height:8px; background:${color}; border-radius:50%; box-shadow:0 0 6px ${color};"></span>
+                                <b style="color:${color}; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">${statusLabel}</b>
+                            </div>
+
+                            ${isZonaRawan ? `<div style="background:#e11d48; color:white; font-size:9px; font-weight:800; padding:6px; border-radius:4px; text-align:center; margin-bottom:10px; letter-spacing:1px; animation: pulseAlert 1.5s infinite;">🚨 ZONA RAWAN KECELAKAAN</div>` : ''}
+
+                            ${savedImage ? `<img src="${savedImage}" style="width:100%; height:100px; object-fit:cover; border-radius:6px; margin-bottom:10px; border:1px solid #e2e8f0;">` : ''}
+
+                            <div class="info-grid" style="margin-bottom:0;">
+                                <div class="info-item" style="padding:8px;">
+                                    <span class="info-label" style="font-size:8px;">G-Force</span>
+                                    <span class="info-value" style="color:${color}; font-size:11px;">${row.mag} g</span>
+                                </div>
+                                <div class="info-item" style="padding:8px;">
+                                    <span class="info-label" style="font-size:8px;">Waktu</span>
+                                    <span class="info-value" style="font-size:11px;">${waktuWITA}</span>
+                                </div>
+                                <div class="info-item" style="grid-column: span 2; padding:8px;">
+                                    <span class="info-label" style="font-size:8px;">Cahaya (SNI 7391:2008)</span>
+                                    <span class="info-value" style="font-size:11px; color:${row.lux < 15 ? '#ef4444' : '#10b981'};">${Math.round(row.lux)} lx <span style="font-size:9px; font-weight:700;">(${kondisiCahaya})</span></span>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align:center; font-size:9px; color:#64748b; font-weight:600; margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:8px;">(Klik titik untuk Menu Aksi)</div>
+                        </div>
+                    </div>
+                `;
+                marker.bindTooltip(tooltipHTML, { direction: 'top', className: 'animated-tooltip', offset: [0, -10] });
+
+                let popupHTML = `
+                    <div class="widget-header">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        Menu Manajemen Titik
+                    </div>
+                    <div class="widget-body" style="padding:14px;">
+                        
+                        <div style="background:#f1f5f9; padding:10px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:10px; align-items:center;">
+                                <span style="color:#64748b; font-weight:700;">Koordinat GPS</span>
+                                <span style="font-family:monospace; color:#0f172a; font-weight:800; font-size:11px;">${latlonStr}</span>
+                            </div>
+                            <button class="popup-action-btn btn-copy" onclick="copyData('${row.lat}, ${row.lon}', this)" style="margin-bottom:0; padding:8px;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                Salin Koordinat
+                            </button>
+                        </div>
+                `;
+
+                if (isDamaged) {
+                    popupHTML += `
+                        <div style="border-top:1px dashed #cbd5e1; padding-top:12px;">
+                            <button id="del-${uniqueId}" class="popup-action-btn" style="color:#ef4444; background:#fff1f2; border-color:#ffe4e6; display:${imgDisplay};" onclick="deletePhoto('${uniqueId}')">
+                                🗑️ Hapus Bukti Fisik
+                            </button>
+                            
+                            <label id="label-${uniqueId}" for="input-${uniqueId}" class="custom-upload-box" style="display:${labelDisplay}; margin-top:0; padding:16px;">
+                                <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px; height:20px; margin-bottom:4px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                                </svg>
+                                <span class="text" style="font-size:11px;">Unggah Bukti Lapangan</span>
+                            </label>
+                            <input type="file" id="input-${uniqueId}" accept="image/*" style="display:none;" onchange="injectPhoto(this, '${uniqueId}', '${statKey}')">
+                        </div>
+                    `;
+                }
+
+                popupHTML += `</div>`;
+                marker.bindPopup(popupHTML);
+
+                markersLayer.addLayer(marker);
+            }
+            
+            if(markersLayer.getLayers().length > 0) { 
+                map.fitBounds(markersLayer.getBounds(), {padding: [50, 50]}); 
+            }
+            
+            updateCharts(stats); 
+            document.getElementById('valSampel').innerText = filteredCount; 
+            document.getElementById('valRusak').innerText = stats.rusak + stats.sedang;
+        }
+
+        window.generateComprehensivePDF = async function() { 
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF(); 
+            const data = JSON.parse(localStorage.getItem('alyaSensorData') || "[]"); 
+            
+            // Hitung Rekapitulasi untuk Laporan
+            let sumRusak = data.filter(d => d.mag >= 1.7).length;
+            let sumSedang = data.filter(d => d.mag >= 1.2 && d.mag < 1.7).length;
+            let sumMulus = data.filter(d => d.mag < 1.2).length;
+
+            doc.setFontSize(16); doc.setFont("helvetica", "bold");
+            doc.text("LAPORAN AUDIT INFRASTRUKTUR JALAN", 105, 20, {align: 'center'}); 
+            doc.setFontSize(10); doc.setFont("helvetica", "normal");
+            doc.text("Sistem Geo-Spasial IoT - Alya A. Damara", 105, 26, {align: 'center'}); 
+            
+            // Cetak Baris Ringkasan
+            doc.setFont("helvetica", "bold");
+            doc.text(`Ringkasan: Total ${data.length} Titik | Rusak Parah: ${sumRusak} | Rusak Sedang: ${sumSedang} | Mulus: ${sumMulus}`, 105, 34, {align: 'center'});
+
+            doc.autoTable({ 
+                head: [['Tanggal', 'Jam (WITA)', 'Koordinat', 'G-Force', 'Status']], 
+                body: data.filter(d => d.mag >= 1.2).map(d => {
+                    // Konversi jam di PDF juga biar sinkron ke WITA
+                    let rT = d.waktu.toString().padStart(6, '0');
+                    let hU = parseInt(rT.substring(0, 2));
+                    let mW = rT.substring(2, 4);
+                    let sW = rT.substring(4, 6);
+                    let hW = (hU + 8) % 24;
+                    let wW = `${hW.toString().padStart(2, '0')}:${mW}:${sW}`;
+                    return [ d.tanggal, wW, `${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}`, `${d.mag}g`, d.mag >= 1.7 ? 'RUSAK PARAH' : 'RUSAK SEDANG' ];
+                }), 
+                startY: 42, theme: 'grid', headStyles: {fillColor: [15, 23, 42]} 
+            }); 
+
+            const photos = await db.photos.toArray();
+            
+            if (photos.length > 0) {
+                doc.addPage();
+                doc.setFontSize(14); doc.setFont("helvetica", "bold");
+                doc.text("LAMPIRAN VALIDASI FISIK (DOKUMENTASI LAPANGAN)", 105, 20, {align: 'center'});
+                
+                let yCursor = 35; let xCursor = 15; const imgWidth = 85; const imgHeight = 60;
+                
+                photos.reverse().forEach((p, index) => {
+                    if (index > 0 && index % 2 === 0) { yCursor += imgHeight + 25; xCursor = 15; }
+                    if (yCursor + imgHeight > 280) { doc.addPage(); yCursor = 30; xCursor = 15; }
+                    doc.addImage(p.base64Image, 'JPEG', xCursor, yCursor, imgWidth, imgHeight);
+                    doc.setFontSize(10); doc.setFont("helvetica", "bold");
+                    let sevText = p.severity === 'sedang' ? 'Kondisi: RUSAK SEDANG' : 'Kondisi: RUSAK PARAH';
+                    doc.text(`ID Titik: #${p.id.substring(5,13)}`, xCursor, yCursor + imgHeight + 6);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(sevText, xCursor, yCursor + imgHeight + 11);
+                    xCursor += imgWidth + 10; 
+                });
+            }
+            doc.save("Laporan_Audit_Lengkap.pdf"); 
+        }
+
+        document.getElementById('csvFile').addEventListener('change', (e) => { Papa.parse(e.target.files[0], { header: true, skipEmptyLines: true, complete: (res) => { let newData = res.data.map(r => ({ lat: parseFloat(r.lat), lon: parseFloat(r.lon), mag: parseFloat(r.mag), lux: parseFloat(r.lux), tanggal: r.tanggal, waktu: r.waktu })).filter(d => !isNaN(d.lat)); let final = JSON.parse(localStorage.getItem('alyaSensorData') || "[]").concat(newData); localStorage.setItem('alyaSensorData', JSON.stringify(final)); renderDashboard(final); } }); });
+        async function resetDatabase() { if(confirm("Hapus seluruh data?")) { localStorage.removeItem('alyaSensorData'); await db.photos.clear(); location.reload(); } }
+        window.onload = () => { renderDashboard(JSON.parse(localStorage.getItem('alyaSensorData') || "[]")); loadSidebarGallery(); };
     </script>
 </body>
 </html>
